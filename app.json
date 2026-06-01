@@ -2,7 +2,7 @@
   "expo": {
     "name": "FlowShift",
     "slug": "flow-shift",
-    "version": "1.0.1",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "flowshift",
@@ -23,11 +23,11 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.andresdev1868.flowshift",
-      "navigationBar": {
-        "barStyle": "dark-content",
-        "backgroundColor": "#ffffff"
-      }
+      "package": "com.andresdev1868.flowshift"
+    },
+    "androidNavigationBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#ffffff"
     },
     "web": {
       "output": "static",
