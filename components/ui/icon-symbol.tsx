@@ -18,6 +18,9 @@ const MAPPING = {
   calendar: 'calendar-today',
   'bell.fill': 'notifications',
   'gearshape.fill': 'settings',
+  'arrow.down.circle': 'system-update',
+  'square.and.arrow.down': 'file-download',
+  'arrow.clockwise': 'refresh',
 } as const satisfies Record<string, ComponentProps<typeof MaterialIcons>['name']>;
 
 export type IconSymbolName = keyof typeof MAPPING;
