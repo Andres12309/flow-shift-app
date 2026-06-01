@@ -159,6 +159,25 @@ eas build --profile preview --platform android
 eas update --channel preview --message "Descripción del cambio"
 ```
 
+### EAS Workflows (canal `preview`)
+
+Workflows en [`.eas/workflows/`](.eas/workflows/) según [EAS Workflows](https://docs.expo.dev/eas/workflows/get-started/):
+
+| Archivo | Qué hace | Cuándo |
+|---------|----------|--------|
+| [`preview-update.yml`](.eas/workflows/preview-update.yml) | `type: update` → canal **preview**, solo **Android** | Push a `main`/`develop`, PRs a `main`, manual |
+| [`preview-build.yml`](.eas/workflows/preview-build.yml) | `type: build` → perfil **preview**, solo **Android** | Manual o tag `preview-v*` |
+
+**Configuración única en [expo.dev](https://expo.dev):** vincular el repo de GitHub al proyecto (Settings → GitHub).
+
+```bash
+# OTA manual (sin push)
+eas workflow:run .eas/workflows/preview-update.yml
+
+# Build nativo manual
+eas workflow:run .eas/workflows/preview-build.yml
+```
+
 **Comportamiento OTA**
 
 | Momento         | Qué ocurre                                                           |

@@ -1,0 +1,24 @@
+# Build nativo Android con perfil eas.json → preview (channel: preview, APK interno).
+# Docs: https://docs.expo.dev/eas/workflows/get-started/
+#
+# Usar cuando cambien módulos nativos, plugins o app.json.
+# Los cambios solo-JS deben ir por preview-update.yml (más rápido).
+#
+# Ejecutar: eas workflow:run .eas/workflows/preview-build.yml
+
+name: Preview — EAS Build Android (perfil preview)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'preview-v*'
+
+jobs:
+  build_android:
+    name: Android (preview)
+    type: build
+    params:
+      platform: android
+      profile: preview
+      message: ${{ github.event.head_commit.message || 'Preview build Android' }}

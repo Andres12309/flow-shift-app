@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -11,11 +11,18 @@ import {
 } from 'react-native';
 
 import {
+  clockToOffsetMinutes,
+  durationFromClockRange,
+  formatBlockSchedule,
+  offsetToClock,
+} from '@/src/application/services/time-utils';
+import {
   MENTAL_STATE_LABELS,
   MENTAL_STATE_OPTIONS,
   type MentalStateType,
 } from '@/src/domain/types/mental-state';
 import type { TimeBlock, TimeBlockInput } from '@/src/domain/types/time-block';
+import { TimeOfDayPicker } from '@/src/presentation/components/TimeOfDayPicker';
 
 export type TimeBlockEditorMode = 'create' | 'edit';
 
@@ -23,45 +30,29 @@ type Props = {
   visible: boolean;
   mode: TimeBlockEditorMode;
   block: TimeBlock | null;
+  dayStart: Date;
+  journeyPreviewLabel: string;
   onClose: () => void;
   onSaveEdit: (id: number, input: TimeBlockInput) => Promise<void>;
   onSaveCreate: (input: TimeBlockInput) => Promise<void>;
 };
 
-function buildInput(
-  name: string,
-  mentalState: MentalStateType,
-  startOffset: string,
-  duration: string,
-  isActive: boolean,
-  sortOrder: number,
-): TimeBlockInput {
-  return {
-    name: name.trim() || 'Nuevo bloque',
-    mentalStateType: mentalState,
-    startOffsetMinutes: Number.parseInt(startOffset, 10) || 0,
-    durationMinutes: Number.parseInt(duration, 10) || 30,
-    isActive,
-    sortOrder,
-  };
-}
-
-/**
- * Modal CRUD: crear o editar bloque; el padre delega en AppContext
- * para persistir y reprogramar notificaciones.
- */
 export function TimeBlockEditorModal({
   visible,
   mode,
   block,
+  dayStart,
+  journeyPreviewLabel,
   onClose,
   onSaveEdit,
   onSaveCreate,
 }: Props) {
   const [name, setName] = useState('');
   const [mentalState, setMentalState] = useState<MentalStateType>('reactive');
-  const [startOffset, setStartOffset] = useState('0');
-  const [duration, setDuration] = useState('60');
+  const [startHours, setStartHours] = useState(7);
+  const [startMinutes, setStartMinutes] = useState(0);
+  const [endHours, setEndHours] = useState(8);
+  const [endMinutes, setEndMinutes] = useState(0);
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
@@ -71,38 +62,59 @@ export function TimeBlockEditorModal({
     if (mode === 'edit' && block) {
       setName(block.name);
       setMentalState(block.mentalStateType);
-      setStartOffset(String(block.startOffsetMinutes));
-      setDuration(String(block.durationMinutes));
+      const start = offsetToClock(dayStart, block.startOffsetMinutes);
+      const end = offsetToClock(dayStart, block.startOffsetMinutes + block.durationMinutes);
+      setStartHours(start.hours);
+      setStartMinutes(start.minutes);
+      setEndHours(end.hours);
+      setEndMinutes(end.minutes);
       setIsActive(block.isActive);
       return;
     }
     if (mode === 'create') {
       setName('');
       setMentalState('reactive');
-      setStartOffset('0');
-      setDuration('60');
+      const defaultStart = offsetToClock(dayStart, 0);
+      setStartHours(defaultStart.hours);
+      setStartMinutes(defaultStart.minutes);
+      setEndHours(defaultStart.hours + 1);
+      setEndMinutes(defaultStart.minutes);
       setIsActive(true);
     }
-  }, [visible, mode, block]);
+  }, [visible, mode, block, dayStart]);
+
+  const buildInput = (sortOrder: number): TimeBlockInput => {
+    const startOffsetMinutes = clockToOffsetMinutes(dayStart, startHours, startMinutes);
+    const durationMinutes = durationFromClockRange(
+      startHours,
+      startMinutes,
+      endHours,
+      endMinutes,
+    );
+    return {
+      name: name.trim() || 'Nuevo bloque',
+      mentalStateType: mentalState,
+      startOffsetMinutes,
+      durationMinutes,
+      isActive,
+      sortOrder,
+    };
+  };
+
+  const previewSchedule = formatBlockSchedule(
+    dayStart,
+    clockToOffsetMinutes(dayStart, startHours, startMinutes),
+    durationFromClockRange(startHours, startMinutes, endHours, endMinutes),
+  );
 
   const handleSave = async () => {
     if (mode === 'edit' && block) {
-      const input = buildInput(
-        name,
-        mentalState,
-        startOffset,
-        duration,
-        isActive,
-        block.sortOrder,
-      );
-      await onSaveEdit(block.id, input);
+      await onSaveEdit(block.id, buildInput(block.sortOrder));
       onClose();
       return;
     }
-
     if (mode === 'create') {
-      const input = buildInput(name, mentalState, startOffset, duration, isActive, 0);
-      await onSaveCreate(input);
+      await onSaveCreate(buildInput(0));
       onClose();
     }
   };
@@ -114,6 +126,8 @@ export function TimeBlockEditorModal({
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>{title}</Text>
+          <Text style={styles.previewHint}>{journeyPreviewLabel}</Text>
+          <Text style={styles.previewTime}>{previewSchedule}</Text>
           <ScrollView>
             <Text style={styles.label}>Nombre</Text>
             <TextInput
@@ -133,20 +147,25 @@ export function TimeBlockEditorModal({
               </Pressable>
             ))}
 
-            <Text style={styles.label}>Offset inicio (min desde inicio jornada)</Text>
-            <TextInput
-              style={styles.input}
-              value={startOffset}
-              onChangeText={setStartOffset}
-              keyboardType="number-pad"
+            <TimeOfDayPicker
+              label="Hora de inicio"
+              hours={startHours}
+              minutes={startMinutes}
+              onChange={(h, m) => {
+                setStartHours(h);
+                setStartMinutes(m);
+              }}
             />
 
-            <Text style={styles.label}>Duración (min)</Text>
-            <TextInput
-              style={styles.input}
-              value={duration}
-              onChangeText={setDuration}
-              keyboardType="number-pad"
+            <TimeOfDayPicker
+              label="Hora de fin"
+              hours={endHours}
+              minutes={endMinutes}
+              onChange={(h, m) => {
+                setEndHours(h);
+                setEndMinutes(m);
+              }}
+              helper="Debe ser posterior a la hora de inicio"
             />
 
             <View style={styles.row}>
@@ -176,13 +195,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   sheet: {
-    maxHeight: '85%',
+    maxHeight: '90%',
     backgroundColor: '#fff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 20,
   },
-  title: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
+  title: { fontSize: 20, fontWeight: '700', marginBottom: 4 },
+  previewHint: { fontSize: 12, color: '#64748b' },
+  previewTime: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2563eb',
+    marginBottom: 12,
+  },
   label: { fontSize: 14, fontWeight: '600', marginTop: 12, marginBottom: 4 },
   input: {
     borderWidth: 1,

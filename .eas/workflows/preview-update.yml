@@ -1,0 +1,44 @@
+# Publica JavaScript OTA al canal "preview" — solo Android.
+# Docs: https://docs.expo.dev/eas/workflows/examples/publish-preview-update/
+#
+# Ejecutar: eas workflow:run .eas/workflows/preview-update.yml
+
+name: Preview — EAS Update (canal preview, Android)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '**'
+      - '!**/*.md'
+      - '!.cursor/**'
+      - '!ARCHITECTURE.md'
+      - '!README.md'
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - '**'
+      - '!**/*.md'
+  workflow_dispatch:
+    inputs:
+      message:
+        type: string
+        required: false
+        description: Mensaje del update (solo ejecución manual)
+        default: 'Preview manual'
+
+jobs:
+  publish_preview_update:
+    name: Publicar OTA Android (preview)
+    type: update
+    params:
+      channel: preview
+      platform: android
+      message: ${{ inputs.message || github.event.head_commit.message || 'Preview update' }}

@@ -9,9 +9,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { LoadingOverlay } from '@/src/presentation/components/LoadingOverlay';
+import { ScreenShell } from '@/src/presentation/components/ScreenShell';
 import { OtaUpdatesSection } from '@/src/presentation/components/OtaUpdatesSection';
 import { useApp } from '@/src/presentation/context/AppContext';
 
@@ -31,9 +30,11 @@ export default function SettingsScreen() {
 
   if (!isReady) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-      </View>
+      <ScreenShell>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+        </View>
+      </ScreenShell>
     );
   }
 
@@ -53,7 +54,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScreenShell>
       <LoadingOverlay visible={isLoading} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.heading}>Kill switches</Text>
@@ -81,12 +82,11 @@ export default function SettingsScreen() {
           <Text style={styles.dangerText}>Restablecer valores de fábrica</Text>
         </Pressable>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 20 },
   heading: { fontSize: 22, fontWeight: '700' },

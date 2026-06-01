@@ -8,16 +8,17 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { formatBlockSchedule, formatTimeLabel } from '@/src/application/services/time-utils';
 import { MENTAL_STATE_LABELS } from '@/src/domain/types/mental-state';
 import type { TimeBlock } from '@/src/domain/types/time-block';
 import { LoadingOverlay } from '@/src/presentation/components/LoadingOverlay';
+import { ScreenShell } from '@/src/presentation/components/ScreenShell';
 import {
   TimeBlockEditorModal,
   type TimeBlockEditorMode,
 } from '@/src/presentation/components/TimeBlockEditorModal';
 import { useApp } from '@/src/presentation/context/AppContext';
+import { useDayStartReference } from '@/src/presentation/hooks/use-day-start-reference';
 
 type EditorState =
   | { open: false }
@@ -32,11 +33,17 @@ export default function BlocksScreen() {
     isLoading,
     error,
     timeBlocks,
+    appConfig,
     updateBlock,
     createBlock,
     deleteBlock,
     scheduledNotificationCount,
   } = useApp();
+
+  const dayStart = useDayStartReference();
+  const journeyPreviewLabel = appConfig?.isDayActive
+    ? `Horarios según jornada iniciada a las ${formatTimeLabel(dayStart)}`
+    : 'Vista previa con jornada a las 7:00';
 
   const [editor, setEditor] = useState<EditorState>({ open: false });
 
@@ -69,19 +76,22 @@ export default function BlocksScreen() {
 
   if (!isReady) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-      </View>
+      <ScreenShell>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+        </View>
+      </ScreenShell>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScreenShell>
       <LoadingOverlay visible={isLoading} />
       <View style={styles.headerRow}>
         <View style={styles.headerText}>
           <Text style={styles.heading}>Bloques de tiempo</Text>
           <Text style={styles.meta}>Alertas sincronizadas: {scheduledNotificationCount}</Text>
+          <Text style={styles.meta}>{journeyPreviewLabel}</Text>
         </View>
         <Pressable style={styles.addButton} onPress={openCreate}>
           <Text style={styles.addButtonText}>+ Nuevo</Text>
@@ -102,7 +112,7 @@ export default function BlocksScreen() {
               <Text style={styles.cardTitle}>{item.name}</Text>
               <Text style={styles.cardLine}>{MENTAL_STATE_LABELS[item.mentalStateType]}</Text>
               <Text style={styles.cardLine}>
-                Inicio +{item.startOffsetMinutes} min · Duración {item.durationMinutes} min
+                {formatBlockSchedule(dayStart, item.startOffsetMinutes, item.durationMinutes)}
               </Text>
               <Text style={styles.cardLine}>
                 {item.isActive ? 'Activo' : 'Desactivado'}
@@ -121,17 +131,18 @@ export default function BlocksScreen() {
           visible
           mode={editor.mode}
           block={editor.block}
+          dayStart={dayStart}
+          journeyPreviewLabel={journeyPreviewLabel}
           onClose={closeEditor}
           onSaveEdit={updateBlock}
           onSaveCreate={createBlock}
         />
       ) : null}
-    </SafeAreaView>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   headerRow: {
     flexDirection: 'row',

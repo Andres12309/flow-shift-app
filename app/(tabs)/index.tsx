@@ -7,10 +7,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { formatTimeLabel } from '@/src/application/services/time-utils';
 import { LoadingOverlay } from '@/src/presentation/components/LoadingOverlay';
+import { ScreenShell } from '@/src/presentation/components/ScreenShell';
 import { useApp } from '@/src/presentation/context/AppContext';
 
 /**
@@ -33,10 +32,12 @@ export default function HomeScreen() {
 
   if (!isReady) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.muted}>Inicializando FlowShift…</Text>
-      </View>
+      <ScreenShell>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.muted}>Inicializando FlowShift…</Text>
+        </View>
+      </ScreenShell>
     );
   }
 
@@ -50,7 +51,7 @@ export default function HomeScreen() {
     : null;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScreenShell>
       <LoadingOverlay visible={isLoading} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.heading}>FlowShift</Text>
@@ -122,13 +123,12 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { padding: 20 },
+  content: { padding: 20, paddingBottom: 24 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   heading: { fontSize: 28, fontWeight: '800', color: '#0f172a' },
   subtitle: { fontSize: 15, color: '#64748b', marginTop: 8, marginBottom: 20 },

@@ -48,12 +48,12 @@ export async function seedDatabaseIfEmpty(db: SQLiteDatabase): Promise<void> {
     [TOGGLE_KEYS.ENGLISH_BLOCK, 'Bloque de inglés', 'kill_switch', 1, null, 'Salida fija y ventana de retorno'],
     [TOGGLE_KEYS.REST_LIMIT, 'Límite de descanso (11 PM)', 'kill_switch', 1, null, 'Alerta estricta para apagar'],
     [TOGGLE_KEYS.DEEP_WORK_BLOCK_ALERTS, 'Alertas en Deep Work', 'kill_switch', 0, null, 'Por defecto bloqueadas salvo comida/emergencia'],
-    [TOGGLE_KEYS.ACTIVE_BREAK_INTERVAL_MINUTES, 'Intervalo pausas activas (min)', 'alert_config', 1, 45, null],
-    [TOGGLE_KEYS.LUNCH_OFFSET_MINUTES, 'Offset almuerzo (min desde inicio)', 'alert_config', 1, 300, null],
-    [TOGGLE_KEYS.ENGLISH_EXIT_MINUTES_FROM_MIDNIGHT, 'Salida inglés (min desde medianoche)', 'alert_config', 1, 18 * 60 + 15, null],
-    [TOGGLE_KEYS.ENGLISH_RETURN_WINDOW_START_MINUTES, 'Retorno inglés — inicio ventana', 'alert_config', 1, 20 * 60 + 30, null],
-    [TOGGLE_KEYS.ENGLISH_RETURN_WINDOW_END_MINUTES, 'Retorno inglés — fin ventana', 'alert_config', 1, 21 * 60 + 30, null],
-    [TOGGLE_KEYS.REST_LIMIT_MINUTES_FROM_MIDNIGHT, 'Límite descanso (min desde medianoche)', 'alert_config', 1, 23 * 60, null],
+    [TOGGLE_KEYS.ACTIVE_BREAK_INTERVAL_MINUTES, 'Pausas activas — frecuencia', 'alert_config', 1, 45, null],
+    [TOGGLE_KEYS.LUNCH_OFFSET_MINUTES, 'Hora del almuerzo', 'alert_config', 1, 300, null],
+    [TOGGLE_KEYS.ENGLISH_EXIT_MINUTES_FROM_MIDNIGHT, 'Inglés — hora de salida', 'alert_config', 1, 18 * 60 + 15, null],
+    [TOGGLE_KEYS.ENGLISH_RETURN_WINDOW_START_MINUTES, 'Inglés — inicio ventana de retorno', 'alert_config', 1, 20 * 60 + 30, null],
+    [TOGGLE_KEYS.ENGLISH_RETURN_WINDOW_END_MINUTES, 'Inglés — fin ventana de retorno', 'alert_config', 1, 21 * 60 + 30, null],
+    [TOGGLE_KEYS.REST_LIMIT_MINUTES_FROM_MIDNIGHT, 'Apagar todo — hora límite', 'alert_config', 1, 23 * 60, null],
   ];
 
   for (const [id, label, category, enabled, numericValue, description] of toggles) {
