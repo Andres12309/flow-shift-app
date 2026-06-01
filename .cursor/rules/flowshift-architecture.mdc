@@ -1,0 +1,50 @@
+---
+description: Arquitectura FlowShift — parametrización, SQLite y notificaciones
+alwaysApply: true
+---
+
+# FlowShift — Reglas de arquitectura
+
+## Parametrización cero en código de negocio
+
+- No hardcodear horarios, nombres de bloques, frecuencias ni offsets en pantallas o servicios.
+- Valores iniciales solo en `src/infrastructure/database/seed.ts` (fábrica).
+- En runtime leer siempre desde SQLite vía repositorios en `src/data/repositories/`.
+
+## Capas (Clean Architecture simplificada)
+
+| Capa | Ruta | Responsabilidad |
+|------|------|-----------------|
+| Domain | `src/domain/` | Tipos, constantes de claves (`toggle-keys`) |
+| Data | `src/data/repositories/` | CRUD SQLite |
+| Infrastructure | `src/infrastructure/` | DB, notificaciones nativas |
+| Application | `src/application/services/` | Orquestación (scheduler, time-utils) |
+| Presentation | `src/presentation/` | Context, componentes, pantallas en `app/` |
+
+## Tiempo relativo
+
+- Bloques: `start_offset_minutes` + `duration_minutes` respecto a `app_configs.day_start_iso`.
+- Alertas absolutas del día (inglés, 11 PM): `*_minutes_from_midnight` en `habit_toggles`.
+- Comida: offset relativo (`lunch_offset_minutes`).
+
+## Notificaciones
+
+- Tras guardar bloque, alerta o toggle: `cancelAllScheduledNotificationsAsync` → `rescheduleAllNotifications`.
+- Lógica central en `notification-scheduler.ts`, no en componentes UI.
+
+## TypeScript
+
+- `strict: true`, prohibido `any`.
+- Mapear filas SQLite en `mappers.ts`.
+
+## Expo
+
+- Consultar docs v54 antes de cambiar APIs: https://docs.expo.dev/versions/v54.0.0/
+
+## OTA (EAS Update)
+
+- `runtimeVersion.policy: appVersion` — el JS OTA no migra el esquema SQLite automáticamente.
+- Migraciones de DB en código (`schema.ts` + futuras versiones), independientes del canal OTA.
+- `checkAutomatically: ON_LOAD` — descarga al iniciar; `UpdatesOnLaunch` avisa antes de `reloadAsync`.
+- Ajustes: búsqueda/descarga/instalación manual (`OtaUpdatesSection`).
+- Servicio: `src/application/services/updates-service.ts`.

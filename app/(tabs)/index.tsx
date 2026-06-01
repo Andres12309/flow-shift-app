@@ -1,98 +1,170 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { formatTimeLabel } from '@/src/application/services/time-utils';
+import { LoadingOverlay } from '@/src/presentation/components/LoadingOverlay';
+import { useApp } from '@/src/presentation/context/AppContext';
 
+/**
+ * Pantalla principal: selección de hora de inicio y disparo del programador diario.
+ * No contiene offsets ni nombres de bloques — todo proviene de SQLite tras "Iniciar Jornada".
+ */
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const {
+    isReady,
+    isLoading,
+    error,
+    appConfig,
+    scheduledNotificationCount,
+    startDay,
+    endDay,
+  } = useApp();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const [selectedHour, setSelectedHour] = useState(7);
+  const [selectedMinute, setSelectedMinute] = useState(0);
+
+  if (!isReady) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" />
+        <Text style={styles.muted}>Inicializando FlowShift…</Text>
+      </View>
+    );
+  }
+
+  const quickPresets: { label: string; hour: number; minute: number }[] = [
+    { label: '7:00 AM', hour: 7, minute: 0 },
+    { label: '8:00 AM', hour: 8, minute: 0 },
+  ];
+
+  const dayStartPreview = appConfig?.dayStartIso
+    ? formatTimeLabel(new Date(appConfig.dayStartIso))
+    : null;
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <LoadingOverlay visible={isLoading} />
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.heading}>FlowShift</Text>
+        <Text style={styles.subtitle}>
+          Gestión de estados mentales con tiempos relativos al inicio de tu jornada
+        </Text>
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        {appConfig?.isDayActive ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Jornada activa</Text>
+            <Text style={styles.cardBody}>
+              Inicio registrado: {dayStartPreview ?? '—'}
+            </Text>
+            <Text style={styles.cardBody}>
+              Alertas programadas: {scheduledNotificationCount}
+            </Text>
+            <Pressable style={[styles.button, styles.secondary]} onPress={() => void endDay()}>
+              <Text style={styles.secondaryText}>Finalizar jornada</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Inicio de jornada</Text>
+            <Text style={styles.cardHint}>Atajos rápidos</Text>
+            <View style={styles.presetRow}>
+              {quickPresets.map((preset) => (
+                <Pressable
+                  key={preset.label}
+                  style={[
+                    styles.preset,
+                    selectedHour === preset.hour &&
+                      selectedMinute === preset.minute &&
+                      styles.presetActive,
+                  ]}
+                  onPress={() => {
+                    setSelectedHour(preset.hour);
+                    setSelectedMinute(preset.minute);
+                  }}>
+                  <Text>{preset.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.cardHint}>
+              Hora seleccionada: {selectedHour.toString().padStart(2, '0')}:
+              {selectedMinute.toString().padStart(2, '0')}
+            </Text>
+
+            <View style={styles.stepperRow}>
+              <Pressable
+                style={styles.stepper}
+                onPress={() => setSelectedHour((h) => (h <= 0 ? 23 : h - 1))}>
+                <Text>− Hora</Text>
+              </Pressable>
+              <Pressable
+                style={styles.stepper}
+                onPress={() => setSelectedHour((h) => (h >= 23 ? 0 : h + 1))}>
+                <Text>+ Hora</Text>
+              </Pressable>
+            </View>
+
+            <Pressable
+              style={[styles.button, styles.primary]}
+              onPress={() => void startDay(selectedHour, selectedMinute)}>
+              <Text style={styles.primaryText}>Iniciar Jornada</Text>
+            </Pressable>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  content: { padding: 20 },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  heading: { fontSize: 28, fontWeight: '800', color: '#0f172a' },
+  subtitle: { fontSize: 15, color: '#64748b', marginTop: 8, marginBottom: 20 },
+  muted: { color: '#94a3b8' },
+  error: { color: '#dc2626', marginBottom: 12 },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  cardBody: { fontSize: 15, color: '#334155', marginBottom: 4 },
+  cardHint: { fontSize: 13, color: '#64748b', marginTop: 8 },
+  presetRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  preset: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+  },
+  presetActive: { backgroundColor: '#dbeafe', borderWidth: 1, borderColor: '#2563eb' },
+  stepperRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  stepper: {
+    flex: 1,
+    padding: 12,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  button: { marginTop: 16, padding: 16, borderRadius: 10, alignItems: 'center' },
+  primary: { backgroundColor: '#2563eb' },
+  primaryText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  secondary: { backgroundColor: '#fee2e2' },
+  secondaryText: { color: '#b91c1c', fontWeight: '600' },
 });

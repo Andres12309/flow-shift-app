@@ -1,0 +1,27 @@
+---
+description: Importaciones estáticas en cabecera — prohibido import() dinámico
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+
+# Importaciones
+
+- Todas las dependencias se importan al inicio del archivo (`import` / `import type`).
+- **Prohibido** `import()` dinámico dentro de funciones, hooks o callbacks.
+- **Prohibido** `await import('...')` para “evitar ciclos” o “cargar bajo demanda” — resolver ciclos refactorizando módulos, no con lazy import.
+- Agrupar imports del mismo módulo en una sola línea cuando sea posible.
+
+```typescript
+// ❌
+async function endDay() {
+  const Notifications = await import('expo-notifications');
+  await Notifications.cancelAllScheduledNotificationsAsync();
+}
+
+// ✅
+import * as Notifications from 'expo-notifications';
+
+async function endDay() {
+  await Notifications.cancelAllScheduledNotificationsAsync();
+}
+```
